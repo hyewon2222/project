@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer, IntegerField, CharField
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ParseError
 
 from item.models import Item
 from actor.models import Actor
@@ -16,9 +16,6 @@ class CreateItemSerializer(ModelSerializer):
         fields = '__all__'
 
     def validate(self, attrs):
-        actor = Actor.objects.filter(id=attrs['actor_id'].id).first()
-        if actor is None:
-            raise NotFound('작가정보가 올바르지 않습니다.')
         return attrs
 
     def create(self, validated_data):
