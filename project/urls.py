@@ -9,5 +9,5 @@ urlpatterns = [
     path('items', ItemView.as_view()),
     path('admin/actors', AdminActorView.as_view()),
     path('admin/editors', AdminEditorView.as_view()),
-    path('admin/items', AdminItemView.as_view())
+    path('admin/items', AdminItemView.as_view()),
 ]

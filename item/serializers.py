@@ -1,11 +1,19 @@
-from rest_framework.serializers import ModelSerializer, IntegerField, CharField
-from rest_framework.exceptions import NotFound, ParseError
+from rest_framework.serializers import ModelSerializer, IntegerField, CharField, FloatField, BooleanField
+from rest_framework.exceptions import ValidationError, NotFound
 
-from item.models import Item
 from actor.models import Actor
+from editor.models import Editor
+from item.models import Item
+from utils.translation import translation
 
 
-class CreateItemSerializer(ModelSerializer):
+class ListItemCheckSerializer(ModelSerializer):
+    class Meta:
+        model = Item
+        fields = '__all__'
+
+
+class AdminCreateItemSerializer(ModelSerializer):
     korea_title = CharField(max_length=100, required=True)
     korea_contents = CharField(max_length=5000, required=True)
     price = IntegerField(required=True)
@@ -19,12 +27,7 @@ class CreateItemSerializer(ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        actor = Actor.objects.filter(id=validated_data['actor_id'].id).first()
+        validated_data['actor_name'] = actor.name
         item = Item.objects.create(**validated_data)
         return item
-
-    class Meta:
-        model = Item
-        fields = '__all__'
-        extra_kwargs = {
-            "id": {"read_only": True}
-        }
