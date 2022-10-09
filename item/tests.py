@@ -55,6 +55,67 @@ class AdminItemTestCase(TestCase):
         self.assertEqual(request.status_code, HTTP_200_OK)
 
 
+class AdminItemCheckTestCase(TestCase):
+    def setUp(self):
+        self.actor = AdminActorTestCase.test_admin_actor_create(self)
+        self.editor = AdminEditorTestCase.test_admin_editor_create(self)
+        self.item = AdminItemTestCase.test_admin_item_create(self)
+        super().setUp()
+
+    def test_admin_item_check(self):
+        reject_data = {
+            'editor_id': self.editor['id'],
+            'status': 'reject'
+        }
+        request = self.client.patch(
+            path=f'/admin/items/{self.item["id"]}/check',
+            data=reject_data,
+            content_type='application/json',
+        )
+        response = request.json()
+        self.assertEqual(request.status_code, HTTP_200_OK)
+        self.assertEqual(response['status'], reject_data['status'])
+
+        success_data = {
+            'editor_id': self.editor['id'],
+            'status': 'success',
+            'commission_rate': 0.5
+        }
+        request = self.client.patch(
+            path=f'/admin/items/{self.item["id"]}/check',
+            data=success_data,
+            content_type='application/json',
+        )
+        response = request.json()
+        self.assertEqual(request.status_code, HTTP_200_OK)
+        self.assertEqual(response['status'], success_data['status'])
+        return response
+
+    def test_admin_item_check_400_error(self):
+        data = {
+            'editor_id': self.editor['id'],
+            'status': 'success'
+        }
+        request = self.client.patch(
+            path=f'/admin/items/{self.item["id"]}/check',
+            data=data,
+            content_type='application/json',
+        )
+        response = request.json()
+        self.assertEqual(request.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response, ['수수료를 입력해주세요.'])
+
+        data['editor_id'] = 5
+        request = self.client.patch(
+            path=f'/admin/items/{self.item["id"]}/check',
+            data=data,
+            content_type='application/json',
+        )
+        response = request.json()
+        self.assertEqual(request.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response['editor_id'], ["Invalid pk \"5\" - object does not exist."])
+
+
 class ItemListTestCase(TestCase):
     def setUp(self):
         self.actor = AdminActorTestCase.test_admin_actor_create(self)

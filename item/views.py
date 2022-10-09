@@ -6,7 +6,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin, ListModelMixin
 from rest_framework.pagination import CursorPagination
 
-from item.serializers import ListItemCheckSerializer, AdminCreateItemSerializer
+from item.serializers import ListItemCheckSerializer, AdminCreateItemSerializer, AdminUpdateItemCheckSerializer
 from item.models import Item
 
 
@@ -20,7 +20,6 @@ class ItemView(ListModelMixin, GenericAPIView):
     queryset = Item.objects
 
     def get_queryset(self):
-        a = Item.objects.all()
         return Item.objects.filter(status='success').all()
 
     def get(self, request, *args, ** kwargs):
@@ -55,6 +54,35 @@ class AdminItemView(CreateModelMixin, ListModelMixin, GenericAPIView):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(self.paginate_queryset(queryset), many=True)
         return self.get_paginated_response(serializer.data)
+
+
+class AdminItemCheckView(UpdateModelMixin, GenericAPIView):
+    serializer_class = AdminUpdateItemCheckSerializer
+
+    def get_object(self):
+        return Item.objects.filter(id=self.kwargs['pk']).first()
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class AdminItemUpdateView(UpdateModelMixin, GenericAPIView):
+    serializer_class = AdminUpdateItemCheckSerializer
+
+    def get_object(self):
+        return Item.objects.filter(id=self.kwargs['pk'], actor_id=1).first()
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
 
 
 

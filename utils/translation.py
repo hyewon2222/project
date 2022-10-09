@@ -14,6 +14,8 @@ def translation(language, text):
     request = urllib.request.Request(url)
     request.add_header('X-Naver-Client-Id', client_id)
     request.add_header('X-Naver-Client-Secret', client_secret)
+    request.add_header('X-NCP-APIGW-API-KEY-ID', 'jyg05ensko')
+    request.add_header('X-NCP-APIGW-API-KEY', 'RJBSHQRezyWD7FtFk1RV8iLsiefSfoIuIQBHZGAM')
     response = urllib.request.urlopen(request, data=data.encode('utf-8'))
     rescode = response.getcode()
 
