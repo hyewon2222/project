@@ -1,16 +1,12 @@
+from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer, IntegerField, CharField, FloatField, BooleanField
 from rest_framework.exceptions import ValidationError, NotFound
 
 from actor.models import Actor
 from editor.models import Editor
 from item.models import Item
+from utils.exchange_rate import exchange_rate
 from utils.translation import translation
-
-
-class ListItemCheckSerializer(ModelSerializer):
-    class Meta:
-        model = Item
-        fields = '__all__'
 
 
 class AdminCreateItemSerializer(ModelSerializer):
@@ -46,7 +42,7 @@ class AdminUpdateItemCheckSerializer(ModelSerializer):
         return attrs
 
     def update(self, instance, validated_data):
-        if instance.commission_rate is None and \
+        if instance.commission_rate == 0.0 and \
                 validated_data.get('commission_rate') is None and \
                 validated_data['status'] == 'success':
             raise ValidationError('수수료를 입력해주세요.')
@@ -70,3 +66,36 @@ class AdminUpdateItemCheckSerializer(ModelSerializer):
         instance.save()
         return instance
 
+
+class AdminItemCheckSerializer(ModelSerializer):
+    class Meta:
+        model = Item
+        fields = '__all__'
+
+
+class ListItemSerializer(ModelSerializer):
+    english_price = SerializerMethodField()
+    english_sale_price = SerializerMethodField()
+    china_price = SerializerMethodField()
+    china_sale_price = SerializerMethodField()
+    commission_price = SerializerMethodField()
+
+    class Meta:
+        model = Item
+        fields = '__all__'
+
+    def get_english_price(self, obj):
+        return round(obj.price / float(exchange_rate()['english']), 2)
+
+    def get_english_sale_price(self, obj):
+        return round(obj.sale_price / float(exchange_rate()['english']), 2)
+
+    def get_china_price(self, obj):
+        return round(obj.price / float(exchange_rate()['china']), 2)
+
+    def get_china_sale_price(self, obj):
+        # rate = exchange_rate()
+        return round(obj.sale_price / float(exchange_rate()['china']), 2)
+
+    def get_commission_price(self, obj):
+        return obj.price * obj.commission_rate
