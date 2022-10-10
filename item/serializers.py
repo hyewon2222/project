@@ -85,17 +85,17 @@ class ListItemSerializer(ModelSerializer):
         fields = '__all__'
 
     def get_english_price(self, obj):
-        return round(obj.price / float(exchange_rate()['english']), 2)
+        return round(obj.price / float(self.context['exchange_rate']['english']), 2)
 
     def get_english_sale_price(self, obj):
-        return round(obj.sale_price / float(exchange_rate()['english']), 2)
+        return round(obj.sale_price / float(self.context['exchange_rate']['english']), 2)
 
     def get_china_price(self, obj):
-        return round(obj.price / float(exchange_rate()['china']), 2)
+        return round(obj.price / float(self.context['exchange_rate']['china']), 2)
 
     def get_china_sale_price(self, obj):
         # rate = exchange_rate()
-        return round(obj.sale_price / float(exchange_rate()['china']), 2)
+        return round(obj.sale_price / float(self.context['exchange_rate']['china']), 2)
 
     def get_commission_price(self, obj):
         return obj.price * obj.commission_rate

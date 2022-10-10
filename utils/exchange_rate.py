@@ -1,4 +1,4 @@
-import urllib.request
+import urllib
 
 
 url = 'https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=%ED%99%98%EC%9C%A8'
