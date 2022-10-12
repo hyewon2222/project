@@ -7,7 +7,7 @@ from rest_framework.mixins import CreateModelMixin, UpdateModelMixin, ListModelM
 from rest_framework.pagination import CursorPagination
 
 from item.serializers import ListItemSerializer, AdminCreateItemSerializer, AdminUpdateItemCheckSerializer, \
-    AdminItemCheckSerializer
+    AdminItemCheckSerializer, AdminUpdateItemSerializer
 from item.models import Item
 from utils.exchange_rate import exchange_rate
 
@@ -63,32 +63,26 @@ class AdminItemView(CreateModelMixin, ListModelMixin, GenericAPIView):
 
 
 class AdminItemCheckView(UpdateModelMixin, GenericAPIView):
-    # 에디터가 검수할때
-    # editor_id가져와서 edirot인지 확인
-    # reject이면 item에 reject update 수정 check_item reject 수정
-    # success면 item에 success와 check_item data update 하고 check item success 수정
     serializer_class = AdminUpdateItemCheckSerializer
 
     def get_object(self):
-        return Item.objects.filter(id=self.kwargs['pk']).first()
+        return Item.objects.filter(id=self.kwargs['pk'], status='ready').first()
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if instance is None:
+            return []
+        serializer = self.get_serializer(instance, data=request.data, partial=True, context={'id': self.kwargs['pk']})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
 
 
 class AdminItemUpdateView(UpdateModelMixin, GenericAPIView):
-    # 작가가 수정할때
-    # action_id를 받아와서
-    # 받아온 값에 있는지 체크하고
-    # 수정한다음에 check_item insert하고 item에 ready update
-    serializer_class = AdminUpdateItemCheckSerializer
+    serializer_class = AdminUpdateItemSerializer
 
     def get_object(self):
-        return Item.objects.filter(id=self.kwargs['pk'], actor_id=1).first()
+        return Item.objects.filter(id=self.kwargs['pk']).first()
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()

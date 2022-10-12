@@ -1,3 +1,5 @@
+import datetime
+
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer, IntegerField, CharField, FloatField, BooleanField
 from rest_framework.exceptions import ValidationError, NotFound
@@ -5,7 +7,6 @@ from rest_framework.exceptions import ValidationError, NotFound
 from actor.models import Actor
 from editor.models import Editor
 from item.models import Item
-from utils.exchange_rate import exchange_rate
 from utils.translation import translation
 
 
@@ -32,13 +33,20 @@ class AdminCreateItemSerializer(ModelSerializer):
 class AdminUpdateItemCheckSerializer(ModelSerializer):
     status = CharField(max_length=20, required=True)
     commission_rate = FloatField(required=False)
-    is_active = BooleanField(required=False)
+    korea_title = CharField(max_length=100)
+    korea_contents = CharField(max_length=5000)
+    price = IntegerField(required=False)
+    sale_price = IntegerField(required=False)
+    is_active = BooleanField()
+    is_deleted = BooleanField()
 
     class Meta:
         model = Item
         fields = '__all__'
 
     def validate(self, attrs):
+        if attrs.get('editor_id') is None:
+            raise ValidationError('에디터 정보를 입력해주세요.')
         return attrs
 
     def update(self, instance, validated_data):
@@ -55,14 +63,37 @@ class AdminUpdateItemCheckSerializer(ModelSerializer):
             setattr(instance, key, validated_data.get(key))
 
         instance.editor_name = editor.name
-        if validated_data['status'] == 'success':
-            korea_title = instance.korea_title
-            korea_contents = instance.korea_contents
-            instance.english_title = translation('en', korea_title)
-            instance.english_contents = translation('en', korea_contents)
-            instance.china_title = translation('zh-CN', korea_title)
-            instance.china_contents = translation('zh-CN', korea_contents)
+        korea_title = instance.korea_title
+        korea_contents = instance.korea_contents
+        instance.english_title = translation('en', korea_title)
+        instance.english_contents = translation('en', korea_contents)
+        instance.china_title = translation('zh-CN', korea_title)
+        instance.china_contents = translation('zh-CN', korea_contents)
+        instance.save()
+        return instance
 
+
+class AdminUpdateItemSerializer(ModelSerializer):
+    korea_title = CharField(max_length=100)
+    korea_contents = CharField(max_length=5000)
+    price = IntegerField(required=False)
+    sale_price = IntegerField(required=False)
+    is_active = BooleanField()
+    is_deleted = BooleanField()
+
+    class Meta:
+        model = Item
+        fields = '__all__'
+
+    def validate(self, attrs):
+        if attrs.get('actor_id') is None:
+            raise ValidationError('작가 정보를 입력해주세요.')
+        return attrs
+
+    def update(self, instance, validated_data):
+        instance.status = 'ready'
+        for key in validated_data:
+            setattr(instance, key, validated_data.get(key))
         instance.save()
         return instance
 
@@ -94,7 +125,6 @@ class ListItemSerializer(ModelSerializer):
         return round(obj.price / float(self.context['exchange_rate']['china']), 2)
 
     def get_china_sale_price(self, obj):
-        # rate = exchange_rate()
         return round(obj.sale_price / float(self.context['exchange_rate']['china']), 2)
 
     def get_commission_price(self, obj):
