@@ -1,4 +1,5 @@
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from rest_framework.exceptions import NotFound
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
@@ -22,7 +23,7 @@ class ItemView(ListModelMixin, GenericAPIView):
     queryset = Item.objects
 
     def get_queryset(self):
-        return Item.objects.filter(status='success').all()
+        return Item.objects.filter(status='success', is_active=True, is_deleted=False).all()
 
     def get(self, request, *args, ** kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -66,12 +67,12 @@ class AdminItemCheckView(UpdateModelMixin, GenericAPIView):
     serializer_class = AdminUpdateItemCheckSerializer
 
     def get_object(self):
-        return Item.objects.filter(id=self.kwargs['pk'], status='ready').first()
+        return Item.objects.filter(id=self.kwargs['pk']).first()
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance is None:
-            return []
+            raise NotFound('존재하지 않는 상품입니다.')
         serializer = self.get_serializer(instance, data=request.data, partial=True, context={'id': self.kwargs['pk']})
         serializer.is_valid(raise_exception=True)
         serializer.save()

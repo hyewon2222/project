@@ -1,11 +1,9 @@
-import json
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from django.test import TestCase
 
 from actor.models import Actor
 from actor.tests import AdminActorTestCase
 from editor.tests import AdminEditorTestCase
-from item.models import Item
 
 
 class AdminItemTestCase(TestCase):
@@ -30,6 +28,7 @@ class AdminItemTestCase(TestCase):
         self.assertEqual(request.status_code, HTTP_201_CREATED)
         self.assertEqual(response['korea_title'], data['korea_title'])
         self.assertEqual(response['actor_name'], self.actor['name'])
+        self.assertEqual(response['status'], 'ready')
         return response
 
     def test_admin_item_create_404_error(self):
@@ -49,10 +48,14 @@ class AdminItemTestCase(TestCase):
         self.assertEqual(response['actor_id'],  ['Invalid pk "5" - object does not exist.'])
 
     def test_admin_item_list(self):
+        item = self.test_admin_item_create()
         request = self.client.get(
             path='/admin/items',
         )
+        response = request.json()
         self.assertEqual(request.status_code, HTTP_200_OK)
+        self.assertEqual(response['results'][0]['id'], item['id'])
+        self.assertEqual(response['results'][0]['status'], item['status'])
 
 
 class AdminItemCheckTestCase(TestCase):
@@ -65,7 +68,6 @@ class AdminItemCheckTestCase(TestCase):
     def test_admin_item_check(self):
         success_data = {
             'editor_id': self.editor['id'],
-            'status': 'success',
             'commission_rate': 0.5,
             'korea_title': '수정'
         }
@@ -76,14 +78,23 @@ class AdminItemCheckTestCase(TestCase):
         )
         response = request.json()
         self.assertEqual(request.status_code, HTTP_200_OK)
-        self.assertEqual(response['status'], success_data['status'])
+        self.assertEqual(self.item['korea_title'], '3D 사무실')
+        self.assertEqual(response['status'], 'success')
         self.assertEqual(response['korea_title'], success_data['korea_title'])
         return response
 
     def test_admin_item_check_400_error(self):
+        request = self.client.patch(
+            path=f'/admin/items/{self.item["id"]}/check',
+            data={},
+            content_type='application/json',
+        )
+        response = request.json()
+        self.assertEqual(request.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response['non_field_errors'], ['에디터 정보를 입력해주세요.'])
+
         data = {
             'editor_id': self.editor['id'],
-            'status': 'success'
         }
         request = self.client.patch(
             path=f'/admin/items/{self.item["id"]}/check',
@@ -103,6 +114,17 @@ class AdminItemCheckTestCase(TestCase):
         response = request.json()
         self.assertEqual(request.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response['editor_id'], ["Invalid pk \"5\" - object does not exist."])
+
+    def test_admin_item_check_404_error(self):
+        request = self.client.patch(
+            path='/admin/items/4/check',
+            data={},
+            content_type='application/json',
+        )
+        response = request.json()
+        self.assertEqual(request.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response['detail'], '존재하지 않는 상품입니다.')
+
 
 class AdminItemUpdateTestCase(TestCase):
     def setUp(self):
@@ -131,21 +153,14 @@ class AdminItemUpdateTestCase(TestCase):
 class ItemListTestCase(TestCase):
     def setUp(self):
         self.actor = AdminActorTestCase.test_admin_actor_create(self)
+        self.editor = AdminEditorTestCase.test_admin_editor_create(self)
+        self.item = AdminItemTestCase.test_admin_item_create(self)
         super().setUp()
 
     def test_item_list(self):
-        actor = Actor.objects.filter(id=self.actor['id']).first()
-        data = {
-            'actor_id': actor,
-            'korea_title': '3D 사무실',
-            'korea_contents': '3D 사무실 입니다.',
-            'price': 30000,
-            'sale_price': 0,
-            'status': 'success'
-        }
-        Item.objects.create(**data)
+        data = AdminItemCheckTestCase.test_admin_item_check(self)
         request = self.client.get(path='/items')
         response = request.json()
         self.assertEqual(request.status_code, HTTP_200_OK)
         self.assertEqual(response['results'][0]['actor_id'], self.actor['id'])
-        self.assertEqual(response['results'][0]['status'], data['status'])
+        self.assertEqual(response['results'][0]['status'], data['status'], 'success')

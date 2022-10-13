@@ -35,8 +35,8 @@ class AdminUpdateItemCheckSerializer(ModelSerializer):
     commission_rate = FloatField(required=False)
     korea_title = CharField(max_length=100)
     korea_contents = CharField(max_length=5000)
-    price = IntegerField(required=False)
-    sale_price = IntegerField(required=False)
+    price = IntegerField()
+    sale_price = IntegerField()
     is_active = BooleanField()
     is_deleted = BooleanField()
 
@@ -50,9 +50,7 @@ class AdminUpdateItemCheckSerializer(ModelSerializer):
         return attrs
 
     def update(self, instance, validated_data):
-        if instance.commission_rate == 0.0 and \
-                validated_data.get('commission_rate') is None and \
-                validated_data['status'] == 'success':
+        if instance.commission_rate == 0.0 and validated_data.get('commission_rate') is None:
             raise ValidationError('수수료를 입력해주세요.')
 
         editor = Editor.objects.filter(id=validated_data['editor_id'].id).first()
@@ -69,6 +67,8 @@ class AdminUpdateItemCheckSerializer(ModelSerializer):
         instance.english_contents = translation('en', korea_contents)
         instance.china_title = translation('zh-CN', korea_title)
         instance.china_contents = translation('zh-CN', korea_contents)
+        instance.is_active = True
+        instance.status = 'success'
         instance.save()
         return instance
 
