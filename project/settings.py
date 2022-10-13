@@ -118,3 +118,5 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
     'PAGE_SIZE': 1
 }
+X_NCP_APIGW_API_KEY_ID = 'jyg05ensko'
+X_NCP_APIGW_API_KEY = 'RJBSHQRezyWD7FtFk1RV8iLsiefSfoIuIQBHZGAM'
